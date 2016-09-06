@@ -2,7 +2,7 @@ import React, { Component, PropTypes } from 'react';
 import ReactCSSTransitionGroup from 'react-addons-css-transition-group';
 import CheckList from './CheckList';
 import marked from 'marked';
-import {DragSource , DropTarget} from 'react-dnd';
+import { DragSource, DropTarget } from 'react-dnd';
 import constants from './constants';
 
 let titlePropType = (props, propName, componentName) => {
@@ -20,17 +20,18 @@ const cardDragSpec = {
 	beginDrag(props){
 		return{
 			id:props.id,
-      status: props.status
+    //  status: props.status
 		};
 	},
-  endDrag(props){
-    props.cardCallbacks.persistCardDrag(props.id,props.status);
-  }
+//   endDrag(props){
+//     props.cardCallbacks.persistCardDrag(props.id,props.status);
+//   }
 }
 
 const cardDropSpec = {
 	hover(props,monitor){
-		const dragId = monitor.getItem().id;
+		const draggedId = monitor.getItem().id;
+		props.cardCallbacks.updatePosition(draggedId, props.id);
 	}
 }
 
@@ -40,6 +41,11 @@ let collectDrag = (connect,monitor) => {
 	};
 }
 
+let collectDrop = (connect, monitor) => {
+	return {
+		connectDropTarget: connect.dropTarget(),
+	};
+}
 class Card extends React.Component {
 	constructor(){
 		super(...arguments);
@@ -52,7 +58,7 @@ class Card extends React.Component {
 	}
 
 	render(){
-		const{connectDragSource} = this.props;
+		const{ connectDragSource, connectDropTarget } = this.props;
 		let cardDetails;
 
 		if(this.state.showDetails){
@@ -80,7 +86,7 @@ class Card extends React.Component {
 
 
 
-		return connectDragSource(
+		return connectDropTarget(connectDragSource(
 
 		<div className="card">
 			<div style={sideColor}>
@@ -96,7 +102,7 @@ class Card extends React.Component {
 			</ReactCSSTransitionGroup>
 		</div>
 
-		)
+		));
 	}
 }
 
@@ -111,7 +117,7 @@ Card.propTypes ={
 	connectDragSource: PropTypes.func.isRequired
 }
 
-let dragHighOrderCard = DragSource(constants.CARD,cardDragSpec,collectDrag)(Card);
-let dragDropHighOrderCard = DropTarget(constants.CARD,cardDragSpec,collectDrop)(dragHighOrderCard)
+const dragHighOrderCard = DragSource(constants.CARD,cardDragSpec,collectDrag)(Card);
+const dragDropHighOrderCard = DropTarget(constants.CARD,cardDropSpec,collectDrop)(dragHighOrderCard);
 
 export default dragDropHighOrderCard

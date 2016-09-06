@@ -34,18 +34,18 @@ componentDidMount(){
     addTask(cardId , taskName){
         //get prevState if error happens.
         let prevState = this.state;
-        //Find the index of the card 
+        //Find the index of the card
         let cardIndex = this.state.cards.findIndex((card)=> card.id == cardId);
         //Create a new task with the given name and a temporary ID
         let newTask = {id:Date.now(),name:taskName,done:false};
-        //Create new object and push the new task to the array of tasks 
+        //Create new object and push the new task to the array of tasks
         let nextState = update(this.state.cards,{
             [cardIndex]: {
                 tasks:{$push:[newTask]}
             }
         });
 
-        //Set component state to mutated object 
+        //Set component state to mutated object
         this.setState({cards:nextState});
         //Call the API to add the task on the server
         fetch(`${API_URL}/cards/${cardId}/tasks`,{
@@ -59,15 +59,15 @@ componentDidMount(){
                 return response.json()
             }
             else{
-                //throw an error if server response wasnt 'ok'  
-                //so you can revert back the optimistic changes 
+                //throw an error if server response wasnt 'ok'
+                //so you can revert back the optimistic changes
                 //made to UI
                 throw new Error("Server response wasn't OK")
             }
         })
         .then((responseData)=> {
             //When the server returns the definitive ID
-            //used for the new Task on the server, update it on React 
+            //used for the new Task on the server, update it on React
             newTask.id = responseData.id
             this.setState({cards:nextState});
         })
@@ -75,22 +75,22 @@ componentDidMount(){
             console.error("Fetch Error" , error)
             this.setState(prevState);
         })
-       
+
     }
     deleteTask(cardId , taskId , taskIndex){
-        //Find the index of the card 
+        //Find the index of the card
         let cardIndex = this.state.cards.findIndex((card) => card.id == cardId)
 
         let prevState = this.state;
 
-        //Create new object without the task 
+        //Create new object without the task
         let nextState = update(this.state.cards,{
-            [cardIndex]: { 
+            [cardIndex]: {
                 tasks: {$splice: [[taskIndex,1]]}
             }
         });
         this.setState({cards:nextState});
-        //Call the API to remove the task on the server 
+        //Call the API to remove the task on the server
         fetch(`${API_URL}/cards/${cardId}/tasks/${taskId}`,{
             method:'delete',
             headers: API_HEADERS
@@ -107,8 +107,8 @@ componentDidMount(){
             console.error("Fetch Error" , error)
             this.setState(prevState);
         })
-        
-      
+
+
     }
     toggleTask(cardId , taskId , taskIndex){
         let prevState = this.state;
@@ -117,7 +117,7 @@ componentDidMount(){
         let cardIndex = this.state.cards.findIndex((card) => card.id == cardId)
         //Save a reference to task's 'done' value
         let newDoneValue;
-        //Using the $apply command, you will change the done value to its opposite 
+        //Using the $apply command, you will change the done value to its opposite
         let nextState = update(this.state.cards,{
             [cardIndex]: {
                 tasks:{
@@ -131,10 +131,10 @@ componentDidMount(){
                 }
             }
         });
-        //set the component state to the mutated object 
+        //set the component state to the mutated object
         this.setState({cards:nextState});
 
-        //Call the API  to toggle the task on the server 
+        //Call the API  to toggle the task on the server
         fetch(`${API_URL}/cards/${cardId}/tasks/${taskId}` , {
             method:'put',
             headers: API_HEADERS,
@@ -152,15 +152,15 @@ componentDidMount(){
             console.error("Fetch Error" , error)
             this.setState(prevState);
         })
-        
-        
+
+
     }
     updateCardStatus (cardId,listId){
         //Find the index of card
         let cardIndex = this.state.cards.findIndex((card) => card.id == cardId);
         //Get the current card
         let card = this.state.cards[cardIndex]
-        //Only proceed if hovering over a different list 
+        //Only proceed if hovering over a different list
         if(card.status !== listId){
             //Set the component state to the mutated object
             this.setState(update(this.state,{
@@ -175,9 +175,9 @@ componentDidMount(){
     updateCardPosition (cardId, afterId){
         //Only proceed if hovering over a different card
         if(cardId !== afterId){
-            //Find the index of the card 
+            //Find the index of the card
             let cardIndex = this.state.cards.findIndex((card) => card.id == cardId);
-            //Get the current card 
+            //Get the current card
             let card = this.state.cards[cardIndex]
             //Find the index of the card the user is hovering over
             let afterIndex = this.state.cards.findIndex((card)=>card.id == afterId);
@@ -192,6 +192,37 @@ componentDidMount(){
             }))
         }
     }
+    persistCardDrag (cardId, status){
+	//Find the index of the card
+	let cardIndex = this.state.cards.findIndex((card)=> card.id == cardId);
+	//Get the current card
+  let card = this.state.cards[cardIndex]
+
+  fetch(`${API_URL}/cards/${cardId}`,{
+    method:'put',
+    headers:API_HEADERS,
+    body: JSON.stringify({status:card.status, row_order_position: cardIndex})
+  })
+  .then((response) => {
+    if(!response.ok){
+      //Throw an error if server wasnt 'ok'
+      //So you can revert back optimistic changes
+      //made to the UI
+      throw new Error("Server response wasn't OK")
+    }
+  })
+  .catch((error) => {
+    console.error("Fetch error:", error);
+    this.setState()
+    update(this.state,{
+      cards:{
+        [cardIndex]: {
+          status: { $set: status }
+        }
+      }
+    })
+  })
+    }
 
     render(){
         return(
@@ -203,8 +234,9 @@ componentDidMount(){
                      }}
                      cardCallbacks={{
                         updateStatus: this.updateCardStatus.bind(this),
-                        updatePosition: this.updateCardPosition.bind(this)
-                    }} 
+                        updatePosition: this.updateCardPosition.bind(this),
+                        persistCardDrag: this.persistCardDrag.bind(this)
+                    }}
                 />
         )
     }

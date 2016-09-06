@@ -16,12 +16,16 @@ let titlePropType = (props, propName, componentName) => {
  }
 }
 
-const cardDragSpec = { 
+const cardDragSpec = {
 	beginDrag(props){
 		return{
-			id:props.id
+			id:props.id,
+      status: props.status
 		};
-	}
+	},
+  endDrag(props){
+    props.cardCallbacks.persistCardDrag(props.id,props.status);
+  }
 }
 
 const cardDropSpec = {
@@ -69,17 +73,17 @@ class Card extends React.Component {
 			width: 7,
 			backgroundColor: this.props.color
 		};
-		
-		
+
+
 		//Card Details without dangerouslySetInnerHTML using!
 		/*{marked(this.props.description)}*/
 
-		
+
 
 		return connectDragSource(
-			
+
 		<div className="card">
-			<div style={sideColor}>	
+			<div style={sideColor}>
 			</div>
 			<div className={this.state.showDetails? "card_title card_title-is-open" : "card_title"} onClick={this.toggleDetails.bind(this)}>
 			{this.props.title}
@@ -91,7 +95,7 @@ class Card extends React.Component {
 			{cardDetails}
 			</ReactCSSTransitionGroup>
 		</div>
-				
+
 		)
 	}
 }
@@ -107,4 +111,7 @@ Card.propTypes ={
 	connectDragSource: PropTypes.func.isRequired
 }
 
-export default DragSource(constants.CARD,cardDragSpec,collectDrag)(Card);
+let dragHighOrderCard = DragSource(constants.CARD,cardDragSpec,collectDrag)(Card);
+let dragDropHighOrderCard = DropTarget(constants.CARD,cardDragSpec,collectDrop)(dragHighOrderCard)
+
+export default dragDropHighOrderCard
